@@ -1,19 +1,21 @@
-# node-systray
+# forked-systray
 
-> SysTray library for nodejs using [systray-portable](https://github.com/zaaack/systray-portable) (a portable version of [the go systray library](https://github.com/getlantern/systray)).
+> SysTray library for nodejs using [ssbc/systrayhelper](https://github.com/ssbc/systrayhelper) (a portable version of [the go systray library](https://github.com/getlantern/systray)).
 
+## forked why?
+
+The [original version built by zaaack](https://github.com/zaaack/node-systray) contianed the compiled helper binaries inside the npm package. I didn't like this approach and therefore added a prebuild fetcher as a npm [postinstall hook](https://docs.npmjs.com/misc/scripts).
 
 ## Install
+
 ```sh
-npm i systray
-# or
-yarn add systray
+npm i forked-systray
 ```
 
 ## Usage
 
 ```ts
-import SysTray from 'systray'
+import SysTray from 'forked-systray'
 
 const systray = new SysTray({
     menu: {
