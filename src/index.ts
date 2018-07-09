@@ -58,33 +58,25 @@ export type Action = UpdateItemAction | UpdateMenuAction | UpdateMenuAndItemActi
 
 export type Conf = {
   menu: Menu,
-  debug?: boolean,
-  copyDir?: boolean | string
 }
 
-const getTrayBinPath = (debug: boolean = false, copyDir: boolean | string = false) => {
-  const binName = ({
-    win32: `tray_windows${debug ? '' : '_release'}.exe`,
-    darwin: `tray_darwin${debug ? '' : '_release'}`,
-    linux: `tray_linux${debug ? '' : '_release'}`,
-  })[process.platform]
-  const binPath = path.resolve(`${__dirname}/../traybin/${binName}`)
-  if (copyDir) {
-    copyDir = path.join((
-      typeof copyDir === 'string'
-        ? copyDir
-        : `${os.homedir()}/.cache/node-systray/`), pkg.version)
-
-    const copyDistPath = path.join(copyDir, binName)
-    if (!fs.existsSync(copyDistPath)) {
-      fs.ensureDirSync(copyDir)
-      fs.copySync(binPath, copyDistPath)
-    }
-
-    return copyDistPath
+/* cloned from node-whereis@0.0.1
+github repo was removed somehow so no way to give feedback/PRs
+therefore copied it here */
+const whereis = (filename) => {
+  const pathSep = process.platform === 'win32' ? ';' : ':'
+  const directories = process.env.PATH!.split(pathSep)
+  for (var i = 0; i < directories.length; i++) {
+      var path = directories[i] + '/' + filename
+      if (fs.existsSync(path)) {
+          return path
+      }
   }
-  return binPath
+  return ""
 }
+
+const helperName = "systray_portable"
+
 const CHECK_STR = ' (√)'
 function updateCheckedInLinux(item: MenuItem) {
   if (process.platform !== 'linux') {
@@ -100,19 +92,23 @@ function updateCheckedInLinux(item: MenuItem) {
 
 export default class SysTray extends EventEmitter {
   protected _conf: Conf
-  protected _process: child.ChildProcess
+  protected _helper: child.ChildProcess
+  protected _helperPath: string
   protected _rl: readline.ReadLine
-  protected _binPath: string
 
   constructor(conf: Conf) {
     super()
     this._conf = conf
-    this._binPath = getTrayBinPath(conf.debug, conf.copyDir)
-    this._process = child.spawn(this._binPath, [], {
+    this._helperPath = whereis(helperName)
+    if (this._helperPath === "") {
+      console.error("could not locate helper binary:", helperName)
+      process.exit(1)
+    }
+    this._helper = child.spawn(this._helperPath, [], {
       windowsHide: true
     })
     this._rl = readline.createInterface({
-      input: this._process.stdout,
+      input: this._helper.stdout,
     })
     conf.menu.items = conf.menu.items.map(updateCheckedInLinux)
     this._rl.on('line', data => debug('onLine', data))
@@ -144,7 +140,7 @@ export default class SysTray extends EventEmitter {
   writeLine(line: string) {
     if (line) {
       debug('writeLine', line + '\n', '=====')
-      this._process.stdin.write(line.trim() + '\n')
+      this._helper.stdin.write(line.trim() + '\n')
     }
     return this
   }
@@ -175,25 +171,25 @@ export default class SysTray extends EventEmitter {
       this.onExit(() => process.exit(0))
     }
     this._rl.close()
-    this._process.kill()
+    this._helper.kill()
   }
 
   onExit(listener: (code: number | null, signal: string | null) => void) {
-    this._process.on('exit', listener)
+    this._helper.on('exit', listener)
   }
 
   onError(listener: (err: Error) => void) {
-    this._process.on('error', err => {
-      debug('onError', err, 'binPath', this.binPath)
+    this._helper.on('error', err => {
+      debug('onError', err, 'helperPath', this.helperPath)
       listener(err)
     })
   }
 
   get killed() {
-    return this._process.killed
+    return this._helper.killed
   }
 
-  get binPath() {
-    return this._binPath
+  get helperPath() {
+    return this._helperPath
   }
 }
