@@ -75,7 +75,7 @@ const whereis = (filename) => {
   return ""
 }
 
-const helperName = "systray_portable"
+const helperName = "systrayhelper"
 
 const CHECK_STR = ' (√)'
 function updateCheckedInLinux(item: MenuItem) {
