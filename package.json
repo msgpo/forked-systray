@@ -5,8 +5,8 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
-    "install": "npm run build && node ./install.js",
-    "build": "run-s clean build:lib doc",
+    "postinstall": "node ./fetch-prebuilt-helper.js",
+    "build": "npm run clean && npm run build:lib",
     "build:lib": "tsc",
     "clean": "del ./lib/**",
     "lint": "tslint ./src/** --type-check -p ./tsconfig.json",
@@ -42,7 +42,6 @@
     "decompress": "^4.2.0",
     "del-cli": "^1.1.0",
     "mocha": "^5.1.1",
-    "npm-run-all": "^4.0.2",
     "nyc": "^11.2.1",
     "pre-commit": "^1.2.2",
     "request": "^2.87.0",
