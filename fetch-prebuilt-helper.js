@@ -9,7 +9,8 @@ const { execSync } = require('child_process');
 const os = require('os')
 const fs = require('fs')
 const { join } = require('path')
-const { whereis } = require('./util')
+
+const { whereis, helperLocation } = require('./util')
 
 function errorAndExit(err) {
   console.error(err)
@@ -35,7 +36,6 @@ if (found !== '') {
   process.exit(0)
 }
 
-const finalHelperLocation = join(os.homedir(), '.cache', 'systrayhelper')
 const tmpDownload = join(os.tmpdir(), 'node-systray-downloadHelper')
 const tmpUnpack = join(os.tmpdir(), 'node-systray-unpack')
 
@@ -121,9 +121,9 @@ function testExecutable(path) {
 }
 
 function cleanup(path) {
-  fs.renameSync(path, finalHelperLocation)
-  fs.chmodSync(finalHelperLocation, "u+x")
+  fs.renameSync(path, helperLocation)
+  fs.chmodSync(helperLocation, "u+x")
   fs.unlinkSync(tmpDownload)
   fs.unlinkSync(tmpUnpack)
-  console.log('cleanup down. the helper is here:', finalHelperLocation)
+  console.log('cleanup down. the helper is here:', helperLocation)
 }

@@ -1,4 +1,6 @@
 const { existsSync } = require('fs')
+const { join } = require('path')
+const { homedir } = require('os')
 
 /* cloned from node-whereis@0.0.1
 github repo was removed somehow so no way to give feedback/PRs
@@ -12,7 +14,15 @@ const whereis = (filename) => {
             return path
         }
     }
+    if (existsSync(helperLocation)) {
+        return helperLocation
+    }
     return ""
 }
 
 exports.whereis = whereis;
+
+// this is the fallback location where the prebuilt will be put
+// TODO: does this work for windows?!
+const helperLocation = join(homedir(), '.cache', 'systrayhelper')
+exports.helperLocation = helperLocation
