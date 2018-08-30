@@ -1,109 +1,129 @@
+'use strict'
 // inspired by https://github.com/Hackzzila/node-ffmpeg-binaries
-const get = require('request')
-const decompress = require('decompress')
-const targz = require('decompress-targz')
-const unzip = require('decompress-unzip')
+const admZip = require('adm-zip');
+const request = require('superagent');
+const tarFs = require('tar-fs')
+const gunzip = require('gunzip-maybe')
+const { execSync } = require('child_process');
 
+const os = require('os')
+const fs = require('fs')
+const { join } = require('path')
 const { whereis } = require('./util')
 
-function callback (err, res, body) {
-  if (err) throw err
-
-  const { statusCode } = res
-  const contentType = res.headers['content-type']
-
-  let error
-  if (statusCode !== 200) {
-    error = new Error(`Download Request Failed.\nStatus Code: ${statusCode}`)
-  } else if (contentType !== 'application/octet-stream') {
-    error = new Error('Invalid content-type.\n' +
-                      `Expected application/octet-stream but received ${contentType}`)
-  }
-  if (error) {
-    console.error(error.message)
-    process.exit(1)
-  }
-
-  /*
-  const ProgressBar = require('progress')
-  const total = parseInt(res.headers['content-length'], 10)
-  console.log('helper download started')
-  var bar = new ProgressBar('  downloading [:bar] :rate/bps :percent :etas', {
-    complete: '=',
-    incomplete: ' ',
-    width: 20,
-    total: total
-  })
-
-  res.setEncoding('utf8')
-  let rawData = ''
-  body.on('data', (chunk) => {
-    rawData += chunk
-    bar.tick(chunk.length)
-  })
-
-  body.on('end', () => {
-    console.log('\nDownload done.')
-  })
-  */
-  const opts = {
-    plugins: process.platform === 'win32' ? [unzip()] : [targz()]
-    // strip: process.platform === 'linux' ? 0 : 1,
-    // filter: x => x.path === (process.platform === 'win32' ? 'systrayhelper.exe' : 'systrayhelper')
-  }
-  decompress(Buffer.from(body), 'binout', opts).then((files) => {
-    console.log('decompress Done!', files)
-  }, (err) => {
-    console.log('decompress failed:', err)
-  })
+function errorAndExit(err) {
+  console.error(err)
+  console.warn('\n######\nHello, sorry you had to see this...')
+  console.warn(`\nFailed to fetch pre-built systrayhelper.
+  Most likely the combination of OS and Architecture isn't currently supported.
+  
+  To still get this working you will have to do some console-magic...
+  
+  1) Install Go - See https://golang.org/doc/install
+  1.5) On linux: you need two libraries, listed here: https://github.com/getlantern/systray#platform-specific-concerns
+  2) run this command: go get github.com/ssbc/systrayhelper
+  3) sudo mv $HOME/go/bin/systrayhelper /usr/local/bin (or any other folder, as long as it's in your $PATH)
+  
+  TODO: evaluate falling back to https://github.com/chemdrew/npm-golang`)
+  process.exit(1)
 }
 
 const found = whereis('systrayhelper')
 if (found !== '') {
-  console.warn('systrayhelper already installed')
+  console.warn('systrayhelper already installed.')
+  testExecutable(found)
   process.exit(0)
 }
 
+const finalHelperLocation = join(os.homedir(), '.cache', 'systrayhelper')
+const tmpDownload = join(os.tmpdir(), 'node-systray-downloadHelper')
+const tmpUnpack = join(os.tmpdir(), 'node-systray-unpack')
+
+console.warn('systrayhelper not installed!')
+console.log('trying to fetching prebuilt for:', process.platform)
+console.log('donload location:', tmpDownload)
+
 try {
+  const urls = {
+    'win32': {
+      'x84': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_windows_amd64.zip',
+      'ia32': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_windows_386.zip'
+    },
+    'linux': {
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_linux_amd64.tar.gz'
+    },
+    'darwin': {
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_darwin_amd64.tar.gz'
+    },
+  }
+  const hasOS = urls[process.platform]
+  if (!hasOS) {
+    throw new Error('unsupported platform:' + process.platform)
+  }
+  const fileUrl = hasOS[process.arch]
+  if (!fileUrl) {
+    throw new Error('unsupported architecture:' + process.arch)
+  }
+
+  // TODO: find out how to pipe through this:
+  // const ProgressBar = require('progress')
+  // var bar = new ProgressBar('  downloading [:bar] :rate/bps :percent :etas', {
+  //   complete: '=',
+  //   incomplete: ' ',
+  //   width: 20,
+  //   total: total
+  // })
+
+  // unpackaPhase
   if (process.platform === 'win32') {
-    switch (process.arch) {
-      case 'x64':
-        get('https://github.com/ssbc/systrayhelper/releases/download/v0.0.0/systrayhelper_0.0.0_windows_amd64.zip', callback)
-        break
-      case 'ia32':
-        get('https://github.com/ssbc/systrayhelper/releases/download/v0.0.0/systrayhelper_0.0.0_windows_386.zip', callback)
-        break
-      default:
-        throw new Error('unsupported architecture:' + process.arch)
-    }
-  } else if (process.platform === 'linux') {
-    switch (process.arch) {
-      case 'x64':
-        get('https://github.com/ssbc/systrayhelper/releases/download/v0.0.0/systrayhelper_0.0.0_linux_amd64.tar.gz', callback)
-        break
-      default:
-        throw new Error('unsupported architecture:' + process.arch)
-    }
-  } else if (process.platform === 'darwin') {
-    switch (process.arch) {
-      case 'x64':
-        get('https://github.com/ssbc/systrayhelper/releases/download/v0.0.0/systrayhelper_0.0.0_darwin_amd64.tar.gz', callback)
-        break
-      default:
-        throw new Error('unsupported architecture:' + process.arch)
-    }
+    request
+      .get(fileUrl)
+      .on('error', errorAndExit)
+      .pipe(fs.createWriteStream(tmpDownload))
+      .on('finish', () => {
+        console.log('finished dowloading');
+        const zip = new admZip(tmpDownload);
+        console.log('start unzip');
+        zip.extractAllTo(tmpUnpack, true);
+        console.log('finished unzip');
+        p = join(tmpUnpack, 'systrayhelper.exe')
+        testExecutable(p)
+        cleanup(p)
+      });
   } else {
-    throw new Error('unsupported platform')
+    request
+      .get(fileUrl)
+      .on('error', errorAndExit)
+      .pipe(gunzip())
+      .pipe(tarFs.extract(tmpUnpack))
+      .on('finish', () => {
+        console.log('finished untar');
+        const p = join(tmpUnpack, 'systrayhelper')
+        testExecutable(p)
+        cleanup(p)
+      })
   }
 } catch (e) {
-  console.error(e)
-  console.log(`Tried to install pre-built systrayhelper.
+  errorAndExit(e)
+}
 
-Sorry, You might have to do some console-magic...
+function testExecutable(path) {
+  console.log('testing execution')
+  try {
+    execSync(path + " --test");
+    // if (exitCode !== 0) {
+    //   errorAndExit(new Error('unexpected exit from helper. exitCode:' + exitCode))
+    // }
+  } catch (e) {
+    errorAndExit(e)
+  }
+  console.log('helper started succesful!');
+}
 
-1) Install Go - See https://golang.org/doc/install
-2) run: go get github.com/ssbc/systrayhelper
-3) setup $PATH to contain $HOME/go/bin
-
-TODO: evaluate falling back to https://github.com/chemdrew/npm-golang`)
+function cleanup(path) {
+  fs.renameSync(path, finalHelperLocation)
+  fs.chmodSync(finalHelperLocation, "u+x")
+  fs.unlinkSync(tmpDownload)
+  fs.unlinkSync(tmpUnpack)
+  console.log('cleanup down. the helper is here:', finalHelperLocation)
 }
