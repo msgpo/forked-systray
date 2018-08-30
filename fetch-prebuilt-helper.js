@@ -1,10 +1,10 @@
 'use strict'
 // inspired by https://github.com/Hackzzila/node-ffmpeg-binaries
-const admZip = require('adm-zip');
-const request = require('superagent');
+const admZip = require('adm-zip')
+const request = require('superagent')
 const tarFs = require('tar-fs')
 const gunzip = require('gunzip-maybe')
-const { execSync } = require('child_process');
+const { execSync } = require('child_process')
 
 const os = require('os')
 const fs = require('fs')
@@ -12,7 +12,7 @@ const { join } = require('path')
 
 const { whereis, helperLocation } = require('./util')
 
-function errorAndExit(err) {
+function errorAndExit (err) {
   console.error(err)
   console.warn('\n######\nHello, sorry you had to see this...')
   console.warn(`\nFailed to fetch pre-built systrayhelper.
@@ -54,7 +54,7 @@ try {
     },
     'darwin': {
       'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_darwin_amd64.tar.gz'
-    },
+    }
   }
   const hasOS = urls[process.platform]
   if (!hasOS) {
@@ -81,15 +81,15 @@ try {
       .on('error', errorAndExit)
       .pipe(fs.createWriteStream(tmpDownload))
       .on('finish', () => {
-        console.log('finished dowloading');
-        const zip = new admZip(tmpDownload);
-        console.log('start unzip');
-        zip.extractAllTo(tmpUnpack, true);
-        console.log('finished unzip');
+        console.log('finished dowloading')
+        const zip = new admZip(tmpDownload)
+        console.log('start unzip')
+        zip.extractAllTo(tmpUnpack, true)
+        console.log('finished unzip')
         p = join(tmpUnpack, 'systrayhelper.exe')
         testExecutable(p)
         cleanup(p)
-      });
+      })
   } else {
     request
       .get(fileUrl)
@@ -97,7 +97,7 @@ try {
       .pipe(gunzip())
       .pipe(tarFs.extract(tmpUnpack))
       .on('finish', () => {
-        console.log('finished untar');
+        console.log('finished untar')
         const p = join(tmpUnpack, 'systrayhelper')
         testExecutable(p)
         cleanup(p)
@@ -107,22 +107,22 @@ try {
   errorAndExit(e)
 }
 
-function testExecutable(path) {
+function testExecutable (path) {
   console.log('testing execution')
   try {
-    execSync(path + " --test");
+    execSync(path + ' --test')
     // if (exitCode !== 0) {
     //   errorAndExit(new Error('unexpected exit from helper. exitCode:' + exitCode))
     // }
   } catch (e) {
     errorAndExit(e)
   }
-  console.log('helper started succesful!');
+  console.log('helper started succesful!')
 }
 
-function cleanup(path) {
+function cleanup (path) {
   fs.renameSync(path, helperLocation)
-  fs.chmodSync(helperLocation, "u+x")
+  fs.chmodSync(helperLocation, 'u+x')
   fs.unlinkSync(tmpDownload)
   fs.unlinkSync(tmpUnpack)
   console.log('cleanup down. the helper is here:', helperLocation)
