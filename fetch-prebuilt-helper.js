@@ -1,56 +1,60 @@
 // inspired by https://github.com/Hackzzila/node-ffmpeg-binaries
-
 const get = require('request')
-const { cursorTo } = require('readline')
 const decompress = require('decompress')
 const targz = require('decompress-targz')
 const unzip = require('decompress-unzip')
 
 const { whereis } = require('./util')
 
-function callback (err, res) {
-  if (err) {
-    throw new Error(err)
+function callback (err, res, body) {
+  if (err) throw err
+
+  const { statusCode } = res
+  const contentType = res.headers['content-type']
+
+  let error
+  if (statusCode !== 200) {
+    error = new Error(`Download Request Failed.\nStatus Code: ${statusCode}`)
+  } else if (contentType !== 'application/octet-stream') {
+    error = new Error('Invalid content-type.\n' +
+                      `Expected application/octet-stream but received ${contentType}`)
+  }
+  if (error) {
+    console.error(error.message)
+    process.exit(1)
   }
 
-  console.log('statusCode:', res.statusCode)
-  console.log('headers:', res.headers)
-  let last
-  let complete = 0
+  /*
+  const ProgressBar = require('progress')
   const total = parseInt(res.headers['content-length'], 10)
-
-  let index = 0
-  const buf = Buffer.alloc(total)
-
-  res.on('data', (chunk) => {
-    chunk.copy(buf, index)
-    index += chunk.length
-
-    complete += chunk.length
-    const progress = Math.round((complete / total) * 20)
-
-    if (progress !== last) {
-      cursorTo(process.stdout, 0, null)
-
-      process.stdout.write(`Downloading systrayhelper: [${'='.repeat(progress)}${[' '.repeat(20 - progress)]}] ${Math.round((complete / total) * 100)}%`)
-
-      last = progress
-    }
+  console.log('helper download started')
+  var bar = new ProgressBar('  downloading [:bar] :rate/bps :percent :etas', {
+    complete: '=',
+    incomplete: ' ',
+    width: 20,
+    total: total
   })
 
-  res.on('end', () => {
-    cursorTo(process.stdout, 0, null)
-    console.log(`Downloading systrayhelper: [${'='.repeat(20)}] 100%`)
+  res.setEncoding('utf8')
+  let rawData = ''
+  body.on('data', (chunk) => {
+    rawData += chunk
+    bar.tick(chunk.length)
+  })
 
-    decompress(buf, 'bin', {
-      plugins: process.platform === 'win32' ? [unzip()] : [targz()]
-      // strip: process.platform === 'linux' ? 1 : 2
-      // filter: x => x.path === (process.platform === 'win32' ? 'systrayhelper.exe' : 'systrayhelper'),
-    }).then((done) => {
-      console.log(`decompress Done!`, done)
-    }, (err) => {
-      console.log(err)
-    })
+  body.on('end', () => {
+    console.log('\nDownload done.')
+  })
+  */
+  const opts = {
+    plugins: process.platform === 'win32' ? [unzip()] : [targz()]
+    // strip: process.platform === 'linux' ? 0 : 1,
+    // filter: x => x.path === (process.platform === 'win32' ? 'systrayhelper.exe' : 'systrayhelper')
+  }
+  decompress(Buffer.from(body), 'binout', opts).then((files) => {
+    console.log('decompress Done!', files)
+  }, (err) => {
+    console.log('decompress failed:', err)
   })
 }
 
