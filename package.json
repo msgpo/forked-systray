@@ -6,9 +6,10 @@
   "typings": "lib/index.d.ts",
   "scripts": {
     "postinstall": "node ./scripts/fetch-prebuilt-helper.js",
-    "build": "npm run clean && npm run build:lib",
+    "build": "npm run build:lib",
     "build:lib": "tsc",
-    "clean": "del ./lib/**",
+    "clean:unix": "del ./lib/**",
+    "clean:windows": "rd /q /s .\\lib",
     "lint": "tslint ./src/** -p ./tsconfig.json",
     "test": "cross-env DEBUG=systray* mocha -r ts-node/register ./test/**/*.test.ts",
     "doc": "typedoc --theme minimal --out ./docs ./src && touch ./docs/.nojekyll",
