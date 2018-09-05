@@ -13,7 +13,7 @@ const { join } = require('path')
 
 const { whereis, helperLocation, errorAndExit } = require('../util')
 
-const found = whereis('systrayhelper')
+const found = process.platform == 'win32' ? whereis('systrayhelper.exe') : whereis('systrayhelper')
 if (found !== '') {
   console.warn('systrayhelper already installed.')
   testExecutable(found)
@@ -30,7 +30,7 @@ console.log('donload location:', tmpDownload)
 try {
   const urls = {
     'win32': {
-      'x84': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_windows_amd64.zip',
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_windows_amd64.zip',
       'ia32': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.2/systrayhelper_0.0.2_windows_386.zip'
     },
     'linux': {
@@ -81,7 +81,7 @@ try {
   errorAndExit(e)
 }
 
-function testExecutable (path) {
+function testExecutable(path) {
   console.log('testing execution')
   try {
     execSync(path + ' --test') // assumptions: exits when invoked with args!=1
@@ -91,10 +91,14 @@ function testExecutable (path) {
   console.log('helper started succesful!')
 }
 
-function cleanup (path) {
-  fs.renameSync(path, helperLocation)
-  fs.chmodSync(helperLocation, '500')
-  fs.unlinkSync(tmpDownload)
-  fs.unlinkSync(tmpUnpack)
-  console.log('cleanup down. the helper is here:', helperLocation)
+function cleanup(path) {
+  try {
+    fs.renameSync(path, helperLocation)
+    fs.chmodSync(helperLocation, '500')
+    fs.unlinkSync(tmpDownload)
+    fs.unlinkSync(tmpUnpack)
+    console.log('cleanup down. the helper is here:', helperLocation)
+  } catch (e) {
+    console.error(`Exception ${e}`)
+  }
 }

@@ -24,8 +24,7 @@ const whereis = (filename) => {
 exports.whereis = whereis
 
 // this is the fallback location where the prebuilt will be put
-// TODO: does this work for windows?!
-const helperLocation = join(homedir(), '.cache', 'systrayhelper')
+const helperLocation = join(homedir(), '.cache', 'systrayhelper') + (process.platform == 'win32' ? '.exe' : '')
 exports.helperLocation = helperLocation
 
 exports.errorAndExit = (err) => {
