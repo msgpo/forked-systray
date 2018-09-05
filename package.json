@@ -29,7 +29,7 @@
   "author": "cryptix",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ssbcs/forked-systray/issues"
+    "url": "https://github.com/ssbc/forked-systray/issues"
   },
   "homepage": "https://github.com/ssbc/forked-systray#readme",
   "devDependencies": {
