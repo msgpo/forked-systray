@@ -5,8 +5,9 @@
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "scripts": {
-    "postinstall": "node ./scripts/fetch-prebuilt-helper.js && npm run build",
-    "build": "npm run build:lib",
+    "prepublish": "npm run build",
+    "postinstall": "node ./scripts/fetch-prebuilt-helper.js",
+    "build": "npm run build:lib && npm run doc",
     "build:lib": "tsc",
     "clean:unix": "del ./lib/**",
     "clean:windows": "rd /q /s .\\lib",
