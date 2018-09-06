@@ -11,9 +11,9 @@ const os = require('os')
 const fs = require('fs')
 const { join } = require('path')
 
-const { whereis, helperLocation, errorAndExit } = require('../util')
+const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
-const found = process.platform == 'win32' ? whereis('systrayhelper.exe') : whereis('systrayhelper')
+const found = whereis(helperName)
 if (found !== '') {
   console.warn('systrayhelper already installed.')
   testExecutable(found)
@@ -62,7 +62,7 @@ try {
         console.log('start unzip')
         zip.extractAllTo(tmpUnpack, true)
         console.log('finished unzip')
-        let p = join(tmpUnpack, 'systrayhelper.exe')
+        let p = join(tmpUnpack, helperName)
         testExecutable(p)
         cleanup(p)
       })
@@ -72,7 +72,7 @@ try {
       .pipe(tarFs.extract(tmpUnpack))
       .on('finish', () => {
         console.log('finished untar')
-        const p = join(tmpUnpack, 'systrayhelper')
+        const p = join(tmpUnpack, helperName)
         testExecutable(p)
         cleanup(p)
       })
@@ -81,7 +81,7 @@ try {
   errorAndExit(e)
 }
 
-function testExecutable(path) {
+function testExecutable (path) {
   console.log('testing execution')
   try {
     execSync(path + ' --test') // assumptions: exits when invoked with args!=1
@@ -91,7 +91,7 @@ function testExecutable(path) {
   console.log('helper started succesful!')
 }
 
-function cleanup(path) {
+function cleanup (path) {
   try {
     fs.renameSync(path, helperLocation)
     fs.chmodSync(helperLocation, '500')

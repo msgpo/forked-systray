@@ -23,8 +23,11 @@ const whereis = (filename) => {
 
 exports.whereis = whereis
 
+const helperName = process.platform === 'win32' ? 'systrayhelper.exe' : 'systrayhelper'
+exports.helperName = helperName
+
 // this is the fallback location where the prebuilt will be put
-const helperLocation = join(homedir(), '.cache', 'systrayhelper') + (process.platform == 'win32' ? '.exe' : '')
+const helperLocation = join(homedir(), '.cache', helperName)
 exports.helperLocation = helperLocation
 
 exports.errorAndExit = (err) => {
