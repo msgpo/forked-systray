@@ -1,12 +1,13 @@
 import * as child from 'child_process'
 import * as EventEmitter from 'events'
-import * as readline from 'readline'
-import Debug from 'debug'
 
-const { whereis } = require('../util')
 
-const pkg = require('../package.json')
-const debug = Debug(pkg.name)
+// missing TS definitions
+var pull = require('pull-stream')
+var toPull = require('stream-to-pull-stream')
+var pndj = require('pull-ndjson')
+
+const { whereis, helperName } = require('../util')
 
 export type MenuItem = {
   title: string,
@@ -59,8 +60,6 @@ export type Conf = {
   menu: Menu,
 }
 
-const helperName = 'systrayhelper'
-
 const CHECK_STR = ' (√)'
 function updateCheckedInLinux(item: MenuItem) {
   if (process.platform !== 'linux') {
@@ -78,7 +77,29 @@ export default class SysTray extends EventEmitter {
   protected _conf: Conf
   protected _helper: child.ChildProcess
   protected _helperPath: string
-  protected _rl: readline.ReadLine
+
+  private toHelper = (evt: any) => {
+    pull(
+      pull.values([evt]),
+      pndj.serialize(),
+      this.debugPull('hstdin'),
+      toPull.sink(this._helper.stdin)
+    )
+  }
+
+  private debugPull = (from: string) => {
+    if (typeof process.env["DEBUG"] === 'undefined') {
+      return pull.through()
+    }
+    return pull.through((data: any) => {
+      if (data instanceof Buffer) {
+        console.warn(from, ":", data.toString())
+      } else {
+        console.warn(from, ":", data)
+      }
+    })
+  }
+
 
   constructor(conf: Conf) {
     super()
@@ -91,89 +112,65 @@ export default class SysTray extends EventEmitter {
     this._helper = child.spawn(this._helperPath, [], {
       windowsHide: true
     })
-    this._rl = readline.createInterface({
-      input: this._helper.stdout,
-    })
+    if (typeof process.env["DEBUG"] === 'undefined') {
+      pull(toPull.source(this._helper.stderr), toPull.sink(process.stderr))
+    }
+
+    // onReady and onClick
+    pull(
+      toPull.source(this._helper.stdout),
+      this.debugPull("hstdout"),
+      pndj.parse(),
+      pull.drain((v: any) => {
+        if (v.type === 'ready') {
+          this.emit('ready', v)
+        }
+        if (v.type === 'clicked') {
+          this.emit('click', v)
+        }
+      })
+    )
+
     conf.menu.items = conf.menu.items.map(updateCheckedInLinux)
-    this._rl.on('line', data => debug('onLine', data))
-    this.onReady(() => this.writeLine(JSON.stringify(conf.menu)))
-  }
+    this.toHelper(conf.menu)
 
-  onReady(listener: () => void) {
-    this._rl.on('line', (line: string) => {
-      let action: Event = JSON.parse(line)
-      if (action.type === 'ready') {
-        listener()
-        debug('onReady', action)
-      }
+    // was onError
+    this._helper.on('error', e => {
+      this.emit('error', e)
     })
-    return this
-  }
 
-  onClick(listener: (action: ClickEvent) => void) {
-    this._rl.on('line', (line: string) => {
-      let action: ClickEvent = JSON.parse(line)
-      if (action.type === 'clicked') {
-        debug('onClick', action)
-        listener(action)
-      }
+    // was onExit
+    this._helper.on('exit', (code, signal) => {
+      this.emit('exit', {code, signal})
     })
-    return this
+
+    // was sendAction
+    this.on('action', (action: Action) => {
+      // not sure what the point of this is.
+      switch (action.type) {
+        case 'update-item':
+          action.item = updateCheckedInLinux(action.item)
+          break
+        case 'update-menu':
+          action.menu.items = action.menu.items.map(updateCheckedInLinux)
+          break
+        case 'update-menu-and-item':
+          action.menu.items = action.menu.items.map(updateCheckedInLinux)
+          action.item = updateCheckedInLinux(action.item)
+          break
+      }
+      this.toHelper(action)
+    })
   }
 
-  writeLine(line: string) {
-    if (line) {
-      debug('writeLine', line + '\n', '=====')
-      this._helper.stdin.write(line.trim() + '\n')
-    }
-    return this
-  }
-
-  sendAction(action: Action) {
-    switch (action.type) {
-      case 'update-item':
-        action.item = updateCheckedInLinux(action.item)
-        break
-      case 'update-menu':
-        action.menu.items = action.menu.items.map(updateCheckedInLinux)
-        break
-      case 'update-menu-and-item':
-        action.menu.items = action.menu.items.map(updateCheckedInLinux)
-        action.item = updateCheckedInLinux(action.item)
-        break
-    }
-    debug('sendAction', action)
-    this.writeLine(JSON.stringify(action))
-    return this
-  }
   /**
    * Kill the systray process
    * @param exitNode Exit current node process after systray process is killed, default is true
    */
   kill(exitNode = true) {
-    if (exitNode) {
-      this.onExit(() => process.exit(0))
-    }
-    this._rl.close()
     this._helper.kill()
-  }
-
-  onExit(listener: (code: number | null, signal: string | null) => void) {
-    this._helper.on('exit', listener)
-  }
-
-  onError(listener: (err: Error) => void) {
-    this._helper.on('error', err => {
-      debug('onError', err, 'helperPath', this.helperPath)
-      listener(err)
-    })
-  }
-
-  get killed() {
-    return this._helper.killed
-  }
-
-  get helperPath() {
-    return this._helperPath
+    if (exitNode) {
+      this.on('exit', () => process.exit(0))
+    }
   }
 }

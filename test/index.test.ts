@@ -1,17 +1,16 @@
-import * as os from 'os'
-import * as path from 'path'
 import * as assert from 'assert'
 import SysTray from '../src/index'
+
 const menu = require('./menu.json')
-const pkg = require('../package.json')
-describe('test', function() {
+
+describe('test', function () {
   this.timeout("10s")
 
-  it('systray is ok', async () => {
+  it('systray is ok', () => {
     const systray = new SysTray({ menu })
-    systray.onClick(action => {
+    systray.on('click', (action) => {
       if (action.seq_id === 0) {
-        systray.sendAction({
+        systray.emit('action', {
           type: 'update-item',
           item: {
             ...(action.item),
@@ -24,12 +23,13 @@ describe('test', function() {
       }
       console.log('action', action)
     })
-    await new Promise(resolve => systray.onReady(resolve))
-    let {code, signal} = await new Promise<{code: number | null, signal: string | null}>(resolve => systray.onExit((code, signal) => resolve({code, signal})))
-    console.log('code', code, 'signal', signal)
-    assert.equal(code, 0)
-    assert.equal(signal, null)
+    systray.on('ready', () => {
+      console.log('is ready')
+      systray.on('exit', (code, signal) => { 
+        console.log('exited.', 'code:', code, 'signal:', signal)
+        assert.equal(code, 0)
+        assert.equal(signal, null)
+      })
+    })
   })
-
-
 })
