@@ -25,7 +25,7 @@ describe('test', function () {
     })
     systray.on('ready', () => {
       console.log('is ready')
-      systray.on('exit', (code, signal) => { 
+      systray.on('exit', ({code, signal}) => {
         console.log('exited.', 'code:', code, 'signal:', signal)
         assert.equal(code, 0)
         assert.equal(signal, null)
