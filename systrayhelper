@@ -1,0 +1,4 @@
+#! /usr/bin/env sh
+
+echo This file should have been replaced by the preinstall script of forked-systray
+exit 1

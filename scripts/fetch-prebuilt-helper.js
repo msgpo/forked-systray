@@ -13,6 +13,8 @@ const { join } = require('path')
 
 const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
+fs.unlinkSync(helperLocation)
+
 const found = whereis(helperName)
 if (found !== '') {
   testExecutable(found)
