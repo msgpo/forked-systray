@@ -19,7 +19,8 @@ const found = whereis(helperName)
 if (found !== '') {
   testExecutable(found)
   fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
-  console.warn('systrayhelper already installed. - created symlink to', found)
+  fs.chmodSync(helperLocation, '500')
+  console.warn('systrayhelper already installed - copied', found)
   process.exit(0)
 }
 
@@ -96,7 +97,7 @@ function testExecutable (path) {
 
 function cleanup (path) {
   try {
-    fs.renameSync(path, helperLocation)
+    fs.createReadStream(path).pipe(fs.createWriteStream(helperLocation));
     fs.chmodSync(helperLocation, '500')
     fs.unlinkSync(tmpDownload)
     fs.unlinkSync(tmpUnpack)
