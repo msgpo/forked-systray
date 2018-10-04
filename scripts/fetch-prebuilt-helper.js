@@ -18,7 +18,7 @@ fs.unlinkSync(helperLocation)
 const found = whereis(helperName)
 if (found !== '') {
   testExecutable(found)
-  fs.symlinkSync(found, helperLocation)
+  fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
   console.warn('systrayhelper already installed. - created symlink to', found)
   process.exit(0)
 }
