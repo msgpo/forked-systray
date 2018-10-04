@@ -15,8 +15,9 @@ const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
 const found = whereis(helperName)
 if (found !== '') {
-  console.warn('systrayhelper already installed.')
   testExecutable(found)
+  fs.symlinkSync(found, helperLocation)
+  console.warn('systrayhelper already installed. - created symlink to', found)
   process.exit(0)
 }
 

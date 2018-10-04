@@ -16,6 +16,9 @@
     "doc": "typedoc --theme minimal --out ./docs ./src && touch ./docs/.nojekyll",
     "cover": "cross-env NODE_ENV=development nyc ava"
   },
+  "bin": {
+    "systrayhelper": "./systrayhelper"
+  },
   "engines": {
     "node": ">=6.0.0"
   },
