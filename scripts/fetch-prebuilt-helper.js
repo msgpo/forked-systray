@@ -13,7 +13,12 @@ const { join } = require('path')
 
 const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
-fs.unlinkSync(helperLocation)
+try {
+  fs.unlinkSync(helperLocation)
+} catch (n) {
+  // unlink throws if file is not found.
+  console.warn('call to unlink failed (probably the helper was not found).')
+}
 
 const found = whereis(helperName)
 if (found !== '') {
@@ -85,7 +90,7 @@ try {
   errorAndExit(e)
 }
 
-function testExecutable (path) {
+function testExecutable(path) {
   console.log('testing execution')
   try {
     execSync(path + ' --test') // assumptions: exits when invoked with args!=1
@@ -95,7 +100,7 @@ function testExecutable (path) {
   console.log('helper started succesful!')
 }
 
-function cleanup (path) {
+function cleanup(path) {
   try {
     fs.createReadStream(path).pipe(fs.createWriteStream(helperLocation));
     fs.chmodSync(helperLocation, '500')
