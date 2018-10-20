@@ -14,7 +14,7 @@ const { join } = require('path')
 const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
 // cleanup previous versions - should make sure we can write there
-if fs.existsSync(helperLocation) {
+if (fs.existsSync(helperLocation)) {
   fs.unlinkSync(helperLocation)
 }
 
