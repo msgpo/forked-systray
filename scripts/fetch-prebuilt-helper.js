@@ -13,11 +13,9 @@ const { join } = require('path')
 
 const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
 
-try {
+// cleanup previous versions - should make sure we can write there
+if fs.existsSync(helperLocation) {
   fs.unlinkSync(helperLocation)
-} catch (n) {
-  // unlink throws if file is not found.
-  console.warn('call to unlink failed (probably the helper was not found).')
 }
 
 const found = whereis(helperName)
