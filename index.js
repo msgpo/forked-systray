@@ -1,86 +1,28 @@
-import * as child from 'child_process'
-import * as EventEmitter from 'events'
+const { EventEmitter } = require('events')
+const { spawn } = require('child_process')
+const pull = require('pull-stream')
+const toPull = require('stream-to-pull-stream')
+const pndj = require('pull-ndjson')
+const Notify = require('pull-notify')
+
+const { whereis, helperName } = require('./util')
 
 
-// missing TS definitions
-var pull = require('pull-stream')
-var toPull = require('stream-to-pull-stream')
-var pndj = require('pull-ndjson')
-var Notify = require('pull-notify')
-
-const { whereis, helperName } = require('../util')
-
-export type MenuItem = {
-  title: string,
-  tooltip: string,
-  checked: boolean,
-  enabled: boolean,
-}
-
-export type Menu = {
-  icon: string,
-  title: string,
-  tooltip: string,
-  items: MenuItem[],
-}
-
-export type ClickEvent = {
-  type: 'clicked',
-  item: MenuItem,
-  seq_id: number,
-}
-
-export type ReadyEvent = {
-  type: 'ready',
-}
-
-export type Event = ClickEvent | ReadyEvent
-
-export type UpdateItemAction = {
-  type: 'update-item',
-  item: MenuItem,
-  seq_id: number,
-}
-
-export type UpdateMenuAction = {
-  type: 'update-menu',
-  menu: Menu,
-  seq_id: number,
-}
-
-export type UpdateMenuAndItemAction = {
-  type: 'update-menu-and-item',
-  menu: Menu,
-  item: MenuItem,
-  seq_id: number,
-}
-
-export type Action = UpdateItemAction | UpdateMenuAction | UpdateMenuAndItemAction
-
-export type Conf = {
-  menu: Menu,
-}
-
-export default class SysTray extends EventEmitter {
-  protected _conf: Conf
-  protected _helper: child.ChildProcess
-  protected _helperPath: string
-
-  private _notifyHelper : any
-  private debugPull = (from: string) => {
-    if (typeof process.env["DEBUG"] === 'undefined') {
-      return pull.through()
-    }
-    return pull.through((data: any) => {
-      if (data instanceof Buffer) {
-        console.warn(from, ":", data.toString())
-      } else {
-        console.warn(from, ":", data)
+class SysTray extends EventEmitter {
+  constructor(conf) {
+    const debugPull = (from) => {
+      if (typeof process.env["DEBUG"] === 'undefined') {
+        return pull.through()
       }
-    })
-  }
+      return pull.through((data) => {
+        if (data instanceof Buffer) {
+          console.warn(from, ":", data.toString())
+        } else {
+          console.warn(from, ":", data)
+        }
+      })
+    }
 
-  constructor(conf: Conf) {
     super()
     this._conf = conf
     this._notifyHelper = Notify()
@@ -91,7 +33,7 @@ export default class SysTray extends EventEmitter {
       process.exit(1)
     }
 
-    this._helper = child.spawn(this._helperPath, [], {
+    this._helper = spawn(this._helperPath, [], {
       windowsHide: true
     })
     this._helper.stderr.pipe(process.stderr)
@@ -99,9 +41,9 @@ export default class SysTray extends EventEmitter {
     // from helper
     pull(
       toPull.source(this._helper.stdout),
-      this.debugPull("hstdout"),
+      debugPull("hstdout"),
       pndj.parse(),
-      pull.drain((v: any) => {
+      pull.drain((v) => {
         if (v.type === 'ready') {
           this.emit('ready', v)
         }
@@ -115,7 +57,7 @@ export default class SysTray extends EventEmitter {
     pull(
       this._notifyHelper.listen(),
       pndj.serialize(),
-      this.debugPull('hstdin'),
+      debugPull('hstdin'),
       toPull.sink(this._helper.stdin)
     )
 
@@ -130,9 +72,7 @@ export default class SysTray extends EventEmitter {
     })
 
     // was sendAction
-    this.on('action', (action: Action) => {
-      this._notifyHelper(action)
-    })
+    this.on('action', this._notifyHelper)
 
     // initialize menu
     this._notifyHelper(conf.menu)
@@ -150,3 +90,5 @@ export default class SysTray extends EventEmitter {
     }
   }
 }
+
+module.exports = SysTray
