@@ -37,14 +37,14 @@ console.log('donload location:', tmpDownload)
 try {
   const urls = {
     'win32': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_windows_amd64.zip',
-      'ia32': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_windows_386.zip'
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_windows_amd64.zip',
+      'ia32': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_windows_386.zip'
     },
     'linux': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_linux_amd64.tar.gz'
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_linux_amd64.tar.gz'
     },
     'darwin': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_darwin_amd64.tar.gz'
+      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_darwin_amd64.tar.gz'
     }
   }
   const hasOS = urls[process.platform]
