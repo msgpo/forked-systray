@@ -47,3 +47,18 @@ exports.errorAndExit = (err) => {
   TODO: brew.sh and windows snoop templates installing the helper`)
   process.exit(1)
 }
+
+exports.shasum = (done) => {
+  var hasher = require('crypto').createHash('sha256')
+  var Transform = require('stream').Transform
+  var t = new Transform({
+    transform: function (data, encoding, cb) {
+      hasher.update(data)
+      cb(null, data)
+    }
+  })
+  t.on('end', function () {
+    done(hasher.digest().toString('hex'))
+  })
+  return t
+}
