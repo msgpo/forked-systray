@@ -1,42 +1,20 @@
 #! /usr/bin/env node
 
-/*
- * this script updates the hashes of the files
- * right now only github releases works
- * but I also want to add ssb blobs and maybe ipfs?
- */
+// this script updates the blob keys in the prebuilts.json
 
 const fs = require('fs')
-const { join } = require('path')
-const request = require('request')
+const ssb = require('ssb-client')
 
-const { shasum } = require('../util.js')
+const { join } = require('path')
 
 const prebuildsJSON = './prebuilts.json'
 const current = require(prebuildsJSON)
 
-let from = process.argv[2]
-if (typeof from === 'undefined') from = 'github'
-console.log('fetching from', from)
-
 const fetchLoc = 'fetches'
-try {
-  fs.statSync(fetchLoc)
-} catch (e) {
-  if (e.code === 'ENOENT') {
-    fs.mkdirSync(fetchLoc)
-  } else {
-    throw e
-  }
-}
 
 var i = 0
 for (const plat of Object.keys(current)) {
   for (const arch of Object.keys(current[plat])) {
-    const f = current[plat][arch][from]
-    const shaThrough = shasum((got) => {
-      current[plat][arch]['hash'] = got
-    })
     i++
     request.get(f)
       .on('error', logErr)
@@ -55,8 +33,3 @@ let done = setInterval(() => {
     console.log('still waiting for ', i, 'downloads')
   }
 }, 2000)
-
-function logErr(err) {
-  console.error(err)
-  process.exitCode = 1
-}
