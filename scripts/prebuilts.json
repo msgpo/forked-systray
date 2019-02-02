@@ -1,0 +1,28 @@
+{
+  "win32": {
+    "x64": {
+      "github": "https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_windows_amd64.zip",
+      "blob": "&todo.sha256",
+      "hash": "c3a28d6e030b2a8e547d66377b81217bcb3e664ee4262b913ebc23f7a0ed21fc"
+    },
+    "ia32": {
+      "github": "https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_windows_386.zip",
+      "blob": "&todo.sha256",
+      "hash": "b82f77f872de8105cd3482fbc51fb36fddc73e72ee26fa0ad33ada47eadb2796"
+    }
+  },
+  "linux": {
+    "x64": {
+      "github": "https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_linux_amd64.tar.gz",
+      "blob": "&todo.sha256",
+      "hash": "5c70a34eecf98e4bd686c2145fa7d0a570567b6eabde75595859ee8751343771"
+    }
+  },
+  "darwin": {
+    "x64": {
+      "github": "https://github.com/ssbc/systrayhelper/releases/download/v0.0.5/systrayhelper_0.0.5_darwin_amd64.tar.gz",
+      "blob": "&todo.sha256",
+      "hash": "803b3e82d0a7a7d8b4b3be4909649e0da3bac694f5bc9ea6f5c247ad0291f8b1"
+    }
+  }
+}

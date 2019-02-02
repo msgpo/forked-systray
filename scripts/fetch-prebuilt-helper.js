@@ -11,7 +11,7 @@ const os = require('os')
 const fs = require('fs')
 const { join } = require('path')
 
-const { whereis, helperName, helperLocation, errorAndExit } = require('../util')
+const { whereis, helperName, helperLocation, errorAndExit, shasum } = require('../util')
 
 // cleanup previous versions - should make sure we can write there
 if (fs.existsSync(helperLocation)) {
@@ -23,6 +23,8 @@ if (found !== '') {
   testExecutable(found)
   fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
   fs.chmodSync(helperLocation, '500')
+  // we need to copy so it's bundled correctly by electron-builder
+  // sorry - i also hate mixing assumptions like this...
   console.warn('systrayhelper already installed - copied', found)
   process.exit(0)
 }
@@ -35,31 +37,31 @@ console.log('trying to fetching prebuilt for:', process.platform)
 console.log('donload location:', tmpDownload)
 
 try {
-  const urls = {
-    'win32': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_windows_amd64.zip',
-      'ia32': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_windows_386.zip'
-    },
-    'linux': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_linux_amd64.tar.gz'
-    },
-    'darwin': {
-      'x64': 'https://github.com/ssbc/systrayhelper/releases/download/v0.0.4/systrayhelper_0.0.4_darwin_amd64.tar.gz'
-    }
-  }
-  const hasOS = urls[process.platform]
+  const locations = require('./prebuilts.json')
+
+  const hasOS = locations[process.platform]
   if (!hasOS) {
     throw new Error('unsupported platform:' + process.platform)
   }
-  const fileUrl = hasOS[process.arch]
-  if (!fileUrl) {
+  const urlAndHash = hasOS[process.arch]
+  if (!urlAndHash) {
     throw new Error('unsupported architecture:' + process.arch)
   }
+
+  // TODO: add FROM_SSB_BLOBS mode
+  const fileUrl = urlAndHash.github
+
+  const shaThrough = shasum((got) => {
+    if (got !== urlAndHash.hash) {
+      throw new Error(`shasum hash mismatch - want:${want} got:${got}`)
+    }
+  })
 
   // unpackPhase
   let req = request.get(fileUrl)
     .on('error', errorAndExit)
     .pipe(progress(':bar'))
+    .pipe(shaThrough)
   if (process.platform === 'win32') {
     req
       .pipe(fs.createWriteStream(tmpDownload))
@@ -109,3 +111,4 @@ function cleanup(path) {
     console.error(`Exception ${e}`)
   }
 }
+
