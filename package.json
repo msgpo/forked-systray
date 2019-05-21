@@ -6,7 +6,7 @@
   "typings": "lib/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run build",
-    "preinstall": "node ./scripts/fetch-prebuilt-helper.js",
+    "postinstall": "node ./scripts/fetch-prebuilt-helper.js",
     "build": "npm run build:lib && npm run doc",
     "build:lib": "tsc --outDir lib",
     "clean:unix": "del ./lib/**",
