@@ -102,6 +102,7 @@ function testExecutable(path) {
 function cleanup(path) {
   try {
     fs.createReadStream(path).pipe(fs.createWriteStream(helperLocation));
+    fs.chmodSync(helperLocation, '777')
     fs.unlinkSync(tmpDownload)
     fs.unlinkSync(tmpUnpack)
     console.log('cleanup down. the helper is here:', helperLocation)
