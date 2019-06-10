@@ -22,7 +22,6 @@ const found = whereis(helperName)
 if (found !== '') {
   testExecutable(found)
   fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
-  fs.chmodSync(helperLocation, '500')
   // we need to copy so it's bundled correctly by electron-builder
   // sorry - i also hate mixing assumptions like this...
   console.warn('systrayhelper already installed - copied', found)
@@ -103,7 +102,6 @@ function testExecutable(path) {
 function cleanup(path) {
   try {
     fs.createReadStream(path).pipe(fs.createWriteStream(helperLocation));
-    fs.chmodSync(helperLocation, '500')
     fs.unlinkSync(tmpDownload)
     fs.unlinkSync(tmpUnpack)
     console.log('cleanup down. the helper is here:', helperLocation)
