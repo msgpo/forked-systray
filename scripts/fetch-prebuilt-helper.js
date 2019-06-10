@@ -18,17 +18,15 @@ if (fs.existsSync(helperLocation)) {
   fs.unlinkSync(helperLocation)
 }
 
-console.log('helper location: ' + helperLocation)
-
-const found = whereis(helperName)
-if (found !== '') {
-  testExecutable(found)
-  fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
-  // we need to copy so it's bundled correctly by electron-builder
-  // sorry - i also hate mixing assumptions like this...
-  console.warn('systrayhelper already installed - copied', found)
-  process.exit(0)
-}
+//const found = whereis(helperName)
+//if (found !== '') {
+//  testExecutable(found)
+//  fs.createReadStream(found).pipe(fs.createWriteStream(helperLocation));
+//  // we need to copy so it's bundled correctly by electron-builder
+//  // sorry - i also hate mixing assumptions like this...
+//  console.warn('systrayhelper already installed - copied', found)
+//  process.exit(0)
+//}
 
 const tmpDownload = join(os.tmpdir(), 'node-systray-downloadHelper')
 const tmpUnpack = join(os.tmpdir(), 'node-systray-unpack')
