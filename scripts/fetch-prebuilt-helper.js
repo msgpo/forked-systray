@@ -18,6 +18,8 @@ if (fs.existsSync(helperLocation)) {
   fs.unlinkSync(helperLocation)
 }
 
+console.log('helper location: ' + helperLocation)
+
 const found = whereis(helperName)
 if (found !== '') {
   testExecutable(found)
