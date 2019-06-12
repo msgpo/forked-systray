@@ -97,6 +97,8 @@ function install() {
   }
 }
 
+install()
+
 function testExecutable(path) {
   console.log('testing execution')
   try {
