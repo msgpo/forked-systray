@@ -35,58 +35,66 @@ console.warn('systrayhelper not installed!')
 console.log('trying to fetching prebuilt for:', process.platform)
 console.log('donload location:', tmpDownload)
 
-try {
-  const locations = require('./prebuilts.json')
+function install() {
+  try {
+    const locations = require('./prebuilts.json')
 
-  const hasOS = locations[process.platform]
-  if (!hasOS) {
-    throw new Error('unsupported platform:' + process.platform)
-  }
-  const urlAndHash = hasOS[process.arch]
-  if (!urlAndHash) {
-    throw new Error('unsupported architecture:' + process.arch)
-  }
-
-  // TODO: add FROM_SSB_BLOBS mode
-  const fileUrl = urlAndHash.github
-
-  const shaThrough = shasum((got) => {
-    if (got !== urlAndHash.hash) {
-      throw new Error(`shasum hash mismatch - want:${want} got:${got}`)
+    const hasOS = locations[process.platform]
+    if (!hasOS) {
+//      throw new Error('unsupported platform:' + process.platform)
+      console.log('unsupported platform: ' + process.platform)
+      console.log('ignoring warning and skipping systray binary')
+      return
     }
-  })
+    const urlAndHash = hasOS[process.arch]
+    if (!urlAndHash) {
+//      throw new Error('unsupported architecture:' + process.arch)
+      console.log('unsupported platform: ' + process.arch)
+      console.log('ignoring warning and skipping systray binary')
+      return
+    }
 
-  // unpackPhase
-  let req = request.get(fileUrl)
-    .on('error', errorAndExit)
-    .pipe(progress(':bar'))
-    .pipe(shaThrough)
-  if (process.platform === 'win32') {
-    req
-      .pipe(fs.createWriteStream(tmpDownload))
-      .on('finish', () => {
-        console.log('finished dowloading')
-        const zip = new ADAMzip(tmpDownload)
-        console.log('start unzip')
-        zip.extractAllTo(tmpUnpack, true)
-        console.log('finished unzip')
-        let p = join(tmpUnpack, helperName)
-        testExecutable(p)
-        cleanup(p)
-      })
-  } else {
-    req
-      .pipe(gunzip())
-      .pipe(tarFs.extract(tmpUnpack))
-      .on('finish', () => {
-        console.log('finished untar')
-        const p = join(tmpUnpack, helperName)
-        testExecutable(p)
-        cleanup(p)
-      })
+    // TODO: add FROM_SSB_BLOBS mode
+    const fileUrl = urlAndHash.github
+
+    const shaThrough = shasum((got) => {
+      if (got !== urlAndHash.hash) {
+        throw new Error(`shasum hash mismatch - want:${want} got:${got}`)
+      }
+    })
+
+    // unpackPhase
+    let req = request.get(fileUrl)
+      .on('error', errorAndExit)
+      .pipe(progress(':bar'))
+      .pipe(shaThrough)
+    if (process.platform === 'win32') {
+      req
+        .pipe(fs.createWriteStream(tmpDownload))
+        .on('finish', () => {
+          console.log('finished dowloading')
+          const zip = new ADAMzip(tmpDownload)
+          console.log('start unzip')
+          zip.extractAllTo(tmpUnpack, true)
+          console.log('finished unzip')
+          let p = join(tmpUnpack, helperName)
+          testExecutable(p)
+          cleanup(p)
+        })
+    } else {
+      req
+        .pipe(gunzip())
+        .pipe(tarFs.extract(tmpUnpack))
+        .on('finish', () => {
+          console.log('finished untar')
+          const p = join(tmpUnpack, helperName)
+          testExecutable(p)
+          cleanup(p)
+        })
+    }
+  } catch (e) {
+    errorAndExit(e)
   }
-} catch (e) {
-  errorAndExit(e)
 }
 
 function testExecutable(path) {
